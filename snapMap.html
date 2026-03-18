@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Interactive Cooling Centers Map</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
+    
+    <style>
+        body { margin: 0; padding: 0; }
+        h2, h3 { margin: 10px; font-size: 18px; }
+        h3 { font-size: 16px; }
+        p { margin: 10px; }
+
+        /* Full page map */
+        #map { position: absolute; top:0; bottom:0; left:0; right:0; width:100%; }
+
+        .map-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            background: rgba(255, 255, 255, 0.8);
+            border-style: solid;
+            border-width: 1px;
+            border-color: rgba(0,0,0,0.2);
+            margin-left: 20px;
+            font-family: Arial, sans-serif;
+            overflow: auto;
+            border-radius: 3px;
+        }
+
+        #features {
+            top: 0;
+            right: 0;
+            left: auto;
+            width: 255px;
+            max-height: 150px;
+            height: auto; 
+            overflow-y: auto;
+            transition: max-height 0.3s ease, width 0.3s ease;
+            display: block;
+        }
+
+        #features.expanded { width: 255px; max-height: 35%; }
+
+        #legend {
+            padding: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            line-height: 18px;
+            height: auto;
+            margin-bottom: 40px;
+            width: 150px;
+        }
+
+        .legend-key {
+            display: inline-block;
+            border-radius: 20%;
+            width: 18px;
+            height: 14px;
+            margin-top: 10px;
+            border: 2px solid #000;
+            margin-right: 5px;
+        }
+
+        #legend h4 { margin: 0 0 6px 0; padding: 0; font-size: 14px; font-weight: bold; }
+
+        .mapboxgl-canvas-container.mapboxgl-interactive,
+        .mapboxgl-ctrl-group button.mapboxgl-ctrl-compass { cursor: unset; }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <!-- Side info box -->
+    <div class='map-overlay' id='features'> 
+        <h2>Seattle Cooling Centers Accessibility</h2>
+        <div id="text-description">
+            <p>Hover over and click on a facility!</p>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="map-overlay" id="legend"></div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic2FyYWg0MTZnIiwiYSI6ImNtZ2d3ejl6eTBwajkycXB1dGJzM2huMGwifQ.vV1HxowcTGJ7rBxRgEY7NQ';
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/light-v11',
+            zoom: 10,
+            center: [-122.335167, 47.608013] // Seattle
+        });
+
+        const featuresPanel = document.getElementById('features');
+        let lockedFeatureId = null;
+
+        async function geojsonFetch() { 
+            let response = await fetch('assets/Master_DS.geojson');
+            let Master_DS = await response.json();
+
+            map.on('load', function() {
+                map.addSource('Master_DS', { type: 'geojson', data: Master_DS });
+
+                map.addLayer({
+                    'id': 'Master_DS-layer',
+                    'type': 'circle', // changed from choropleth to generic point layer for cooling centers
+                    'source': 'Master_DS',
+                    'paint': {
+                        'circle-radius': 6,
+                        'circle-color': '#1f78b4',
+                        'circle-stroke-width': 1,
+                        'circle-stroke-color': '#000'
+                    }
+                });
+
+                // Legend title update
+                const legend = document.getElementById("legend");
+                const legendTitle = document.createElement('h4');
+                legendTitle.textContent = 'Cooling Centers';
+                legend.appendChild(legendTitle);
+
+                const key = document.createElement('span');
+                key.style.backgroundColor = '#1f78b4';
+                key.className = 'legend-key';
+                key.style.width = '12px';
+                key.style.height = '12px';
+                key.style.display = 'inline-block';
+                key.style.marginRight = '5px';
+                legend.appendChild(key);
+
+                const label = document.createElement('span');
+                label.innerHTML = 'Public Facility';
+                legend.appendChild(label);
+
+                featuresPanel.style.display = 'block';
+
+                // Hover interaction
+                map.on('mousemove', ({ point }) => {
+                    if (lockedFeatureId !== null) return;
+                    const feature = map.queryRenderedFeatures(point, { layers: ['Master_DS-layer'] });
+                    if (feature.length) {
+                        const props = feature[0].properties;
+                        document.getElementById('text-description').innerHTML = `<h3>${props.Name}</h3><p>${props.Type}</p>`;
+                    } else {
+                        document.getElementById('text-description').innerHTML = `<p>Hover over and click on a facility!</p>`;
+                    }
+                });
+
+                // Click interaction
+                map.on('click', ({ point }) => {
+                    const feature = map.queryRenderedFeatures(point, { layers: ['Master_DS-layer'] });
+                    if (!feature.length) return;
+                    const props = feature[0].properties;
+                    const thisId = props.GEOID || props.ID;
+
+                    if (lockedFeatureId === thisId) {
+                        lockedFeatureId = null;
+                        featuresPanel.classList.remove('expanded');
+                        document.getElementById('text-description').innerHTML = `<p>Hover over and click on a facility!</p>`;
+                        return;
+                    }
+
+                    lockedFeatureId = thisId;
+                    featuresPanel.classList.add('expanded');
+                    document.getElementById('text-description').innerHTML = `<h3>${props.Name}</h3><p>${props.Type}</p>`;
+                });
+            });
+        }
+
+        geojsonFetch();
+    </script>
+
+</body>
+</html>
