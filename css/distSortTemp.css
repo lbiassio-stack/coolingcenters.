@@ -1,0 +1,84 @@
+ h2, h3 {
+        margin: 10px;
+        font-size: 18px;
+        }
+
+        h3 {
+            font-size: 16px;
+        }
+
+        p {
+            margin: 10px;
+        }
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+        }
+        .map-overlay {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            max-width: 320px;
+
+            /* Dark, glassy background */
+            background: radial-gradient(circle at top left,
+                        rgba(59, 130, 246, 0.28),
+                        rgba(15, 23, 42, 0.95));
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            border-radius: 16px;
+            padding: 14px 16px;
+
+            /* Slight blur for glass effect (works in modern browsers) */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+
+            font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            color: #e5e7eb;
+            overflow: auto;
+        }
+
+        /* Positioning of this particular overlay */
+        #features {
+            top: 0;
+            height: 150px;
+            margin-top: 80px; /* leaves space under the navbar */
+            width: 280px;
+        }
+
+        /* Titles inside the overlay */
+        #features h2 {
+            margin: 0 0 6px 0;
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            color: #e5e7eb;
+        }
+
+        /* Paragraph inside the overlay */
+        #features p {
+            margin: 4px 0 0 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #cbd5f5;
+        }
+
+        .mapboxgl-canvas-container.mapboxgl-interactive,
+        .mapboxgl-ctrl-group button.mapboxgl-ctrl-compass {
+            cursor: unset;
+        }
+
+        /* Fix map overlapping the navbar */
+        #map {
+            position: absolute;
+            top: 65px;  /* height of your nav bar */
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
